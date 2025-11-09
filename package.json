@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "seed": "tsx --env-file=.env prisma/seed.ts",
-    "lint": "eslint"
+    "lint": "eslint",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",
