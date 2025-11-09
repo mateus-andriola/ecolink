@@ -1,0 +1,105 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdEvents  ActionEvent[]    @relation("EventCreator")
+  eventRoles     UserEventRole[]
+  surveyResponses SurveyResponse[]
+
+  @@map("users")
+}
+
+model ActionEvent {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @db.Text
+  date        DateTime
+  location    String
+  latitude    Float?
+  longitude   Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Metrics
+  collectedWasteKg  Float? @default(0)
+  plantedTrees      Int?   @default(0)
+  areaRecoveredM2   Float? @default(0)
+
+  createdById String
+  createdBy   User   @relation("EventCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  participants    UserEventRole[]
+  resources       Resource[]
+  surveyResponses SurveyResponse[]
+
+  @@map("action_events")
+}
+
+enum EventRole {
+  ORGANIZER
+  PARTNER
+  VOLUNTEER
+}
+
+model UserEventRole {
+  id       String    @id @default(cuid())
+  role     EventRole
+  joinedAt DateTime  @default(now())
+
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  eventId String
+  event   ActionEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+  @@map("user_event_roles")
+}
+
+model Resource {
+  id       String @id @default(cuid())
+  name     String
+  quantity Float
+  unit     String
+
+  eventId String
+  event   ActionEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("resources")
+}
+
+enum SurveyPhase {
+  PRE_INTERVENTION
+  POST_INTERVENTION
+}
+
+model SurveyResponse {
+  id        String      @id @default(cuid())
+  phase     SurveyPhase
+  answers   Json
+  createdAt DateTime    @default(now())
+
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  eventId String
+  event   ActionEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("survey_responses")
+}
